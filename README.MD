@@ -32,6 +32,13 @@ Make sure Zed knows how to call this agent. Add the following snippet to `settin
 
 Once the binary is on PATH, Zed can invoke `droid-acp` directly through the CLI.
 
+Change Log
+------
+v1.0.0
+- feat: initialize project, user not yet change model from Zed Editor
+v1.0.1
+- feat: user can change model from Zed Editor
+
 Status
 ------
 The project is still under active development. Some features remain incomplete—for example, edit permissions are not wired up yet because we are missing details from the Droid JSON-RPC responses. Expect rough edges while the protocol integration stabilizes.
