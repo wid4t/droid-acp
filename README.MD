@@ -34,10 +34,11 @@ Once the binary is on PATH, Zed can invoke `droid-acp` directly through the CLI.
 
 Change Log
 ------
-v1.0.0
-- feat: initialize project, user not yet change model from Zed Editor
-v1.0.1
-- feat: user can change model from Zed Editor
+### v1.0.1
+- feat: allow switching models from within Zed Editor
+
+### v1.0.0
+- feat: initial project scaffold; Zed Editor always uses the default Droid ACP model
 
 Status
 ------
