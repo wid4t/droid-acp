@@ -2,7 +2,7 @@ Droid ACP ( Droid Unofficial ACP connector for Zed Editor )
 =========
 
 <p align="center">
-  <img src="image/example.png" width="300">
+  <img src="image/example.png" width="400">
 </p>
 
 Build
