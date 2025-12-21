@@ -91,6 +91,12 @@ type NewSessionParams struct {
 
 type NewSessionResult struct {
 	SessionID string `json:"sessionId"`
+	Models    Models `json:"models,omitempty"`
+}
+
+type Models struct {
+	AvailableModels []ModelInfo `json:"availableModels"`
+	CurrentModelId  ModelId     `json:"currentModelId"`
 }
 
 type PromptParams struct {
@@ -112,6 +118,11 @@ type ClientResources struct {
 
 type PromptResult struct {
 	StopReason string `json:"stopReason"`
+}
+
+type SetModelParams struct {
+	SessionID string `json:"sessionId"`
+	ModelID   ModelId `json:"modelId"`
 }
 
 // ACP Session Update Notification
@@ -233,3 +244,39 @@ type PatchResult struct {
 	Before string
 	After  string
 }
+
+type ResultModel struct {
+	SessionID       string           `json:"sessionId"`
+	Session         ResultSession    `json:"session"`
+	Settings        SessionSettings  `json:"settings"`
+	AvailableModels []AvailableModel `json:"availableModels"`
+}
+
+type ResultSession struct {
+	Messages []Message `json:"messages"`
+}
+
+type SessionSettings struct {
+	ModelID         string `json:"modelId"`
+	ReasoningEffort string `json:"reasoningEffort"`
+	AutonomyLevel   string `json:"autonomyLevel"`
+}
+
+type AvailableModel struct {
+	ID                        string   `json:"id"`
+	ModelID                   string   `json:"modelId"`
+	ModelProvider             string   `json:"modelProvider"`
+	DisplayName               string   `json:"displayName"`
+	ShortDisplayName          string   `json:"shortDisplayName"`
+	SupportedReasoningEfforts []string `json:"supportedReasoningEfforts"`
+	DefaultReasoningEffort    string   `json:"defaultReasoningEffort"`
+	IsCustom                  bool     `json:"isCustom"`
+}
+
+type ModelInfo struct {
+	ModelId     ModelId `json:"modelId"`
+	Name        string  `json:"name"`
+	Description string  `json:"description,omitempty"`
+}
+
+type ModelId string
