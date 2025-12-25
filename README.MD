@@ -2,7 +2,7 @@ Droid ACP ( Droid Unofficial ACP connector for Zed Editor )
 =========
 
 <p align="center">
-  <img src="image/example.png" width="400">
+  <img src="image/example.png" width="500">
 </p>
 
 support : gpt-5.1.codex, GLM-4.7 ( other model to be confirm )
