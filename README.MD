@@ -5,6 +5,8 @@ Droid ACP ( Droid Unofficial ACP connector for Zed Editor )
   <img src="image/example.png" width="400">
 </p>
 
+support : gpt-5.1.codex, GLM-4.7 ( other model to be confirm )
+
 Build
 -----
 1. Open this repository in a terminal and run `go build .`.
@@ -34,6 +36,13 @@ Once the binary is on PATH, Zed can invoke `droid-acp` directly through the CLI.
 
 Change Log
 ------
+### v1.0.2
+- refactor code and improvement
+- feat: support file edit confirmation ( user can review code before apply this changes )
+
+note: for support file edit confirmation, start -> powersheel -> run droid -> ctrl T and make sure show like this
+Auto (Off) - all actions require approval. After that create new session for droid-acp
+
 ### v1.0.1
 - feat: allow switching models from within Zed Editor
 
@@ -42,4 +51,4 @@ Change Log
 
 Status
 ------
-The project is still under active development. Some features remain incomplete—for example, edit permissions are not wired up yet because we are missing details from the Droid JSON-RPC responses. Expect rough edges while the protocol integration stabilizes.
+The project is still under active development
