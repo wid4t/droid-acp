@@ -121,42 +121,13 @@ type PromptResult struct {
 }
 
 type SetModelParams struct {
-	SessionID string `json:"sessionId"`
+	SessionID string  `json:"sessionId"`
 	ModelID   ModelId `json:"modelId"`
-}
-
-// ACP Session Update Notification
-
-type ToolCall struct {
-	ToolCallId string `json:"toolCallId,omitempty"`
-}
-
-type Option struct {
-	OptionId string `json:"optionId"`
-	Name     string `json:"name"`
-	Kind     string `json:"kind"`
-}
-
-type SessionUpdateParams struct {
-	SessionID string   `json:"sessionId"`
-	Update    Update   `json:"update,omitempty"`
-	ToolCall  ToolCall `json:"toolCall,omitempty"`
-	Options   []Option `json:"options,omitempty"`
 }
 
 type SessionRequestPermissionParams struct {
 	SessionID string   `json:"sessionId"`
 	ToolCall  ToolCall `json:"toolCall"`
-	Options   []Option `json:"options"`
-}
-
-type Update struct {
-	SessionUpdate string          `json:"sessionUpdate,omitempty"`
-	ToolCallId    string          `json:"toolCallId,omitempty"`
-	Content       json.RawMessage `json:"content,omitempty"`
-	Title         string          `json:"title,omitempty"`
-	Kind          string          `json:"kind,omitempty"`
-	Status        string          `json:"status,omitempty"`
 }
 
 // Droid Protocol Types (This Agent <-> Droid)
@@ -172,71 +143,11 @@ type DroidMessage struct {
 	Error             json.RawMessage `json:"error,omitempty"`
 }
 
-type DroidNotification struct {
-	Notification DroidNotificationData `json:"notification,omitempty"`
-	ToolUses     []ToolUseEntry        `json:"toolUses,omitempty"`
-	Options      []ToolUseOption       `json:"options,omitempty"`
-}
-
-type ToolUseEntry struct {
-	ToolUse          ToolUse        `json:"toolUse"`
-	ConfirmationType string         `json:"confirmationType,omitempty"`
-	Details          *ToolUseDetail `json:"details,omitempty"`
-}
-
-type ToolUse struct {
-	Type  string          `json:"type"`
-	ID    string          `json:"id"`
-	Name  string          `json:"name"`
-	Input json.RawMessage `json:"input,omitempty"`
-}
-
-type ToolUseDetail struct {
-	Type              string   `json:"type"`
-	FullCommand       string   `json:"fullCommand,omitempty"`
-	Command           string   `json:"command,omitempty"`
-	ExtractedCommands []string `json:"extractedCommands,omitempty"`
-	ImpactLevel       string   `json:"impactLevel,omitempty"`
-}
-
 type ToolUseOption struct {
 	Label          string `json:"label"`
 	Value          string `json:"value"`
 	SelectedColor  string `json:"selectedColor,omitempty"`
 	SelectedPrefix string `json:"selectedPrefix,omitempty"`
-}
-
-type DroidNotificationData struct {
-	Type      string          `json:"type"`
-	Message   Message         `json:"message,omitempty"`
-	TextDelta string          `json:"textDelta,omitempty"`
-	Content   json.RawMessage `json:"content,omitempty"`
-	// Streaming fields for tool_use
-	Index       int    `json:"index,omitempty"`
-	InputDelta  string `json:"inputDelta,omitempty"`
-	ToolUseID   string `json:"toolUseId,omitempty"`
-	ToolUseName string `json:"toolUseName,omitempty"`
-	NewState    string `json:"newState,omitempty"`
-}
-
-type Message struct {
-	Id      string    `json:"id"`
-	Role    string    `json:"role"`
-	Content []Content `json:"content,omitempty"`
-}
-
-type Content struct {
-	Id      string `json:"id"`
-	Type    string `json:"type"`
-	Text    string `json:"text,omitempty"`
-	Path    string `json:"path,omitempty"`
-	OldText string `json:"oldText,omitempty"`
-	NewText string `json:"newText,omitempty"`
-	Input   *Input `json:"input,omitempty"`
-}
-
-type Input struct {
-	Input string `json:"input"`
 }
 
 type PatchResult struct {
@@ -280,3 +191,124 @@ type ModelInfo struct {
 }
 
 type ModelId string
+
+// struct for permission request
+type RequestPermissionParam struct {
+	SessionID string             `json:"sessionId"`
+	ToolCall  ToolCall           `json:"toolCall,omitempty"`
+	Options   []PermissionOption `json:"options,omitempty"`
+}
+
+type ToolCall struct {
+	ToolCallId string `json:"toolCallId"`
+	Title      string `json:"title,omitempty"`
+	Kind       string `json:"kind,omitempty"`
+	Status     string `json:"status,omitempty"`
+	Content    any    `json:"content,omitempty"`
+}
+
+type DiffContent struct {
+	Type    string `json:"type"`
+	Path    string `json:"path"`
+	OldText string `json:"oldText"`
+	NewText string `json:"newText"`
+}
+
+type PermissionOption struct {
+	OptionId string `json:"optionId"`
+	Name     string `json:"name"`
+	Kind     string `json:"kind"`
+}
+
+//--- end of struct for permission request
+
+// struct for session update param
+type SessionUpdateParam struct {
+	SessionID string `json:"sessionId"`
+	Update    Update `json:"update"`
+}
+
+type Update struct {
+	SessionUpdate string   `json:"sessionUpdate,omitempty"`
+	ToolCallId    string   `json:"toolCallId,omitempty"`
+	Title         string   `json:"title,omitempty"`
+	Kind          string   `json:"kind,omitempty"`
+	Status        string   `json:"status,omitempty"`
+	Content       *Content `json:"content,omitempty"`
+}
+
+type Content struct {
+	Type    string `json:"type"`
+	Text    string `json:"text,omitempty"`
+	Path    string `json:"path,omitempty"`
+	OldText string `json:"oldText,omitempty"`
+	NewText string `json:"newText,omitempty"`
+}
+
+//--- end of struct for session update param
+
+// struct for Droid
+type DroidNotification struct {
+	Notification DroidNotificationData `json:"notification,omitempty"`
+	ToolUses     []ToolUseParent       `json:"toolUses,omitempty"`
+	Options      []ToolUseOption       `json:"options,omitempty"`
+}
+
+type ToolUseParent struct {
+	ToolUse          ToolUse        `json:"toolUse"`
+	ConfirmationType string         `json:"confirmationType,omitempty"`
+	Details          *ToolUseDetail `json:"details,omitempty"`
+}
+
+type ToolUse struct {
+	Type  string          `json:"type"`
+	ID    string          `json:"id"`
+	Name  string          `json:"name"`
+	Input json.RawMessage `json:"input,omitempty"`
+}
+
+type InputApplyPatch struct {
+	Input string `json:"input"`
+}
+
+type InputEdit struct {
+	FilePath  string `json:"file_path"`
+	OldStr    string `json:"old_str"`
+	NewString string `json:"new_str"`
+}
+
+type ToolUseDetail struct {
+	Type              string   `json:"type"`
+	FilePath          string   `json:"filePath,omitempty"`
+	FileName          string   `json:"fileName,omitempty"`
+	PatchContent      string   `json:"patchContent,omitempty"`
+	OldContent        string   `json:"oldContent,omitempty"`
+	NewContent        string   `json:"newContent,omitempty"`
+	FullCommand       string   `json:"fullCommand,omitempty"`
+	Command           string   `json:"command,omitempty"`
+	ExtractedCommands []string `json:"extractedCommands,omitempty"`
+	ImpactLevel       string   `json:"impactLevel,omitempty"`
+}
+
+type DroidNotificationData struct {
+	Type        string          `json:"type"`
+	Message     Message         `json:"message,omitempty"`
+	TextDelta   string          `json:"textDelta,omitempty"`
+	Content     json.RawMessage `json:"content,omitempty"`
+	Index       int             `json:"index,omitempty"`
+	InputDelta  string          `json:"inputDelta,omitempty"`
+	ToolUseID   string          `json:"toolUseId,omitempty"`
+	ToolUseName string          `json:"toolUseName,omitempty"`
+	NewState    string          `json:"newState,omitempty"`
+}
+
+type Message struct {
+	Id      string         `json:"id"`
+	Role    string         `json:"role"`
+	Content []DroidContent `json:"content,omitempty"`
+}
+
+type DroidContent struct {
+	Id    string           `json:"id"`
+	Input *InputApplyPatch `json:"input,omitempty"`
+}
