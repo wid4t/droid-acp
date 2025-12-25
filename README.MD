@@ -39,8 +39,7 @@ Change Log
 ### v1.0.2
 - refactor code and improvement
 - feat: support file edit confirmation ( user can review code before apply this changes )
-
-note: for support file edit confirmation, start -> powersheel -> run droid -> ctrl T and make sure show like this
+- note: for support file edit confirmation, start -> powersheel -> run droid -> ctrl + T and make sure show like this
 Auto (Off) - all actions require approval. After that create new session for droid-acp
 
 ### v1.0.1
