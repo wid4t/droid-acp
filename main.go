@@ -1,4 +1,4 @@
-// Author: ridwan
+// Author: widat
 package main
 
 import (
