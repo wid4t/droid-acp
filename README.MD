@@ -1,8 +1,8 @@
-Droid ACP ( Droid Unofficial ACP connector for Zed Editor )
+Droid ACP ( Droid Unofficial ACP connector for Zed Editor | size : under 5 MB )
 =========
 
 <p align="center">
-  <img src="image/example.png" width="500">
+  <img src="image/example.png" width="1000">
 </p>
 
 support : gpt-5.1.codex, GLM-4.7 ( other model to be confirm )
@@ -36,6 +36,9 @@ Once the binary is on PATH, Zed can invoke `droid-acp` directly through the CLI.
 
 Change Log
 ------
+### v1.0.3
+- feat: implement edit tracking feature ( code review )
+
 ### v1.0.2
 - refactor code and improvement
 - feat: support file edit confirmation ( user can review code before apply this changes )
