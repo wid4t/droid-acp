@@ -90,7 +90,7 @@ type NewSessionParams struct {
 }
 
 type NewSessionResult struct {
-	SessionID string `json:"sessionId"`
+	SessionId string `json:"sessionId"`
 	Models    Models `json:"models,omitempty"`
 }
 
@@ -100,7 +100,7 @@ type Models struct {
 }
 
 type PromptParams struct {
-	SessionID string         `json:"sessionId"`
+	SessionId string         `json:"sessionId"`
 	Prompt    []ContentBlock `json:"prompt"`
 }
 
@@ -121,12 +121,12 @@ type PromptResult struct {
 }
 
 type SetModelParams struct {
-	SessionID string  `json:"sessionId"`
+	SessionId string  `json:"sessionId"`
 	ModelID   ModelId `json:"modelId"`
 }
 
 type SessionRequestPermissionParams struct {
-	SessionID string   `json:"sessionId"`
+	SessionId string   `json:"sessionId"`
 	ToolCall  ToolCall `json:"toolCall"`
 }
 
@@ -194,17 +194,18 @@ type ModelId string
 
 // struct for permission request
 type RequestPermissionParam struct {
-	SessionID string             `json:"sessionId"`
+	SessionId string             `json:"sessionId"`
 	ToolCall  ToolCall           `json:"toolCall,omitempty"`
 	Options   []PermissionOption `json:"options,omitempty"`
 }
 
 type ToolCall struct {
-	ToolCallId string `json:"toolCallId"`
-	Title      string `json:"title,omitempty"`
-	Kind       string `json:"kind,omitempty"`
-	Status     string `json:"status,omitempty"`
-	Content    any    `json:"content,omitempty"`
+	ToolCallId string             `json:"toolCallId"`
+	Title      string             `json:"title,omitempty"`
+	Kind       string             `json:"kind,omitempty"`
+	Status     string             `json:"status,omitempty"`
+	Content    any                `json:"content,omitempty"`
+	Locations  []ToolCallLocation `json:"locations,omitempty"`
 }
 
 type DiffContent struct {
@@ -224,17 +225,23 @@ type PermissionOption struct {
 
 // struct for session update param
 type SessionUpdateParam struct {
-	SessionID string `json:"sessionId"`
+	SessionId string `json:"sessionId"`
 	Update    Update `json:"update"`
 }
 
 type Update struct {
-	SessionUpdate string   `json:"sessionUpdate,omitempty"`
-	ToolCallId    string   `json:"toolCallId,omitempty"`
-	Title         string   `json:"title,omitempty"`
-	Kind          string   `json:"kind,omitempty"`
-	Status        string   `json:"status,omitempty"`
-	Content       *Content `json:"content,omitempty"`
+	SessionUpdate string             `json:"sessionUpdate,omitempty"`
+	ToolCallId    string             `json:"toolCallId,omitempty"`
+	Title         string             `json:"title,omitempty"`
+	Kind          string             `json:"kind,omitempty"`
+	Status        string             `json:"status,omitempty"`
+	Content       *Content           `json:"content,omitempty"`
+	Locations     []ToolCallLocation `json:"locations,omitempty"`
+}
+
+type ToolCallLocation struct {
+	Path string `json:"path"`
+	Line int    `json:"line,omitempty"`
 }
 
 type Content struct {
@@ -311,4 +318,11 @@ type Message struct {
 type DroidContent struct {
 	Id    string           `json:"id"`
 	Input *InputApplyPatch `json:"input,omitempty"`
+}
+
+// -- struct for fs
+type FSWriteTextFileParam struct {
+	SessionId string `json:"sessionId"`
+	Path      string `json:"path"`
+	Content   string `json:"content"`
 }

@@ -18,7 +18,7 @@ import (
 	"github.com/google/uuid"
 )
 
-const version = "1.0.2"
+const version = "1.0.3"
 
 var (
 	writeMu              sync.Mutex
@@ -40,6 +40,8 @@ var (
 type permissionRequest struct {
 	DroidRequestID string
 	ToolCallID     string
+	WritePath      string
+	WriteContent   string
 }
 
 func sendACPResponse(id any, result any) error {
@@ -239,9 +241,15 @@ func handleACPRequest(req types.ACPRequest) {
 			if permissionResp.Outcome.OptionId != "" {
 				reqID := fmt.Sprint(req.ID)
 				permissionRequestMu.Lock()
-				request := permissionRequestMap[reqID]
-				delete(permissionRequestMap, reqID)
+				request, ok := permissionRequestMap[reqID]
+				if ok {
+					delete(permissionRequestMap, reqID)
+				}
 				permissionRequestMu.Unlock()
+				if !ok {
+					fmt.Fprintf(os.Stderr, "[WARN] Missing permission request state for ACP id=%s\n", reqID)
+					return
+				}
 
 				responseID := request.DroidRequestID
 				if responseID == "" {
@@ -250,6 +258,19 @@ func handleACPRequest(req types.ACPRequest) {
 				if responseID == "" {
 					fmt.Fprintf(os.Stderr, "[WARN] Missing droid request id for permission response (acp id=%s)\n", reqID)
 					return
+				}
+
+				allowed := permissionResp.Outcome.OptionId == "proceed_once" || permissionResp.Outcome.OptionId == "proceed_always"
+				if allowed && request.WritePath != "" {
+					update := types.FSWriteTextFileParam{
+						SessionId: currentSession,
+						Path:      request.WritePath,
+						Content:   request.WriteContent,
+					}
+
+					if _, err := sendACPRequest("fs/write_text_file", update); err != nil {
+						fmt.Fprintf(os.Stderr, "[ERROR] Failed to send fs/write_text_file request: %v\n", err)
+					}
 				}
 
 				result := map[string]any{
@@ -359,7 +380,7 @@ func handleACPRequest(req types.ACPRequest) {
 			return
 		}
 
-		sessionID := strings.TrimSpace(params.SessionID)
+		sessionID := strings.TrimSpace(params.SessionId)
 		if sessionID == "" {
 			sessionID = currentSession
 		}
@@ -481,7 +502,7 @@ func handleDroidMessage(msg types.DroidMessage) {
 
 			currentSession = uuid.New().String()
 			response := types.NewSessionResult{
-				SessionID: currentSession,
+				SessionId: currentSession,
 				Models:    modelsRoot,
 			}
 			pendingSessionMu.Lock()
@@ -521,15 +542,12 @@ func handleDroidMessage(msg types.DroidMessage) {
 					Text: params.Notification.TextDelta,
 				}
 				update := types.SessionUpdateParam{
-					SessionID: currentSession,
+					SessionId: currentSession,
 					Update: types.Update{
 						SessionUpdate: "agent_message_chunk",
 						Content:       content,
 					},
 				}
-
-				debugJSON, _ := json.Marshal(update)
-				fmt.Fprintf(os.Stderr, "[DEBUG] Sending session/update with params: %s\n", string(debugJSON))
 
 				if err := sendACPNotification("session/update", update); err != nil {
 					fmt.Fprintf(os.Stderr, "[ERROR] Failed to send session/update notification: %v\n", err)
@@ -541,15 +559,12 @@ func handleDroidMessage(msg types.DroidMessage) {
 					Text: params.Notification.TextDelta,
 				}
 				update := types.SessionUpdateParam{
-					SessionID: currentSession,
+					SessionId: currentSession,
 					Update: types.Update{
 						SessionUpdate: "agent_thought_chunk",
 						Content:       content,
 					},
 				}
-
-				debugJSON, _ := json.Marshal(update)
-				fmt.Fprintf(os.Stderr, "[DEBUG] Sending session/update with params: %s\n", string(debugJSON))
 
 				if err := sendACPNotification("session/update", update); err != nil {
 					fmt.Fprintf(os.Stderr, "[ERROR] Failed to send session/update notification: %v\n", err)
@@ -580,8 +595,12 @@ func handleDroidMessage(msg types.DroidMessage) {
 						NewText: patch.After,
 					}
 
+					var locations []types.ToolCallLocation
+
+					locations = []types.ToolCallLocation{{Path: patch.URI}}
+
 					update := types.SessionUpdateParam{
-						SessionID: currentSession,
+						SessionId: currentSession,
 						Update: types.Update{
 							SessionUpdate: "tool_call",
 							ToolCallId:    params.Notification.Message.Content[0].Id,
@@ -589,6 +608,7 @@ func handleDroidMessage(msg types.DroidMessage) {
 							Status:        "pending",
 							Title:         patch.URI,
 							Content:       &content,
+							Locations:     locations,
 						},
 					}
 
@@ -673,24 +693,13 @@ func handleDroidMessage(msg types.DroidMessage) {
 				} else {
 					title = "update"
 				}
-				register := types.SessionUpdateParam{
-					SessionID: currentSession,
-					Update: types.Update{
-						SessionUpdate: "tool_call",
-						ToolCallId:    toolUses.ToolUse.ID,
-						Status:        "in_progress",
-						Title:         title,
-					},
-				}
-
-				if err := sendACPNotification("session/update", register); err != nil {
-					fmt.Fprintf(os.Stderr, "[ERROR] Failed to send session/update notification: %v\n", err)
-				}
 
 				var request types.RequestPermissionParam
+				var filePath, oldText, newText string
+				var writePath, writeContent string
 				if len(toolUses.Details.FullCommand) == 0 {
 					var contents []types.DiffContent = []types.DiffContent{}
-					var filePath, oldText, newText string
+
 					inputRaw := toolUses.ToolUse.Input
 					switch toolUses.ConfirmationType {
 					case "apply_patch":
@@ -712,6 +721,11 @@ func handleDroidMessage(msg types.DroidMessage) {
 						filePath = input.FilePath
 						oldText = input.OldStr
 						newText = input.NewString
+
+						writePath = filePath
+						if toolUses.Details != nil {
+							writeContent = toolUses.Details.NewContent
+						}
 					}
 					contents = append(contents, types.DiffContent{
 						Type:    "diff",
@@ -719,32 +733,54 @@ func handleDroidMessage(msg types.DroidMessage) {
 						OldText: oldText,
 						NewText: newText,
 					})
+					var locations []types.ToolCallLocation
+
+					locations = []types.ToolCallLocation{{Path: filePath}}
+
 					request = types.RequestPermissionParam{
-						SessionID: currentSession,
+						SessionId: currentSession,
 						ToolCall: types.ToolCall{
 							ToolCallId: toolUses.ToolUse.ID,
 							Title:      filePath,
 							Kind:       "edit",
 							Status:     "pending",
 							Content:    contents,
+							Locations:  locations,
 						},
 						Options: options,
 					}
 
 				} else {
+					update := types.SessionUpdateParam{
+						SessionId: currentSession,
+						Update: types.Update{
+							SessionUpdate: "tool_call",
+							ToolCallId:    toolUses.ToolUse.ID,
+							Status:        "in_progress",
+							Title:         title,
+						},
+					}
+
+					if err := sendACPNotification("session/update", update); err != nil {
+						fmt.Fprintf(os.Stderr, "[ERROR] Failed to send session/update notification: %v\n", err)
+					}
+
 					request = types.RequestPermissionParam{
-						SessionID: currentSession,
+						SessionId: currentSession,
 						ToolCall: types.ToolCall{
 							ToolCallId: toolUses.ToolUse.ID,
 						},
 						Options: options,
 					}
 				}
+
 				if reqID, err := sendACPRequest("session/request_permission", request); err == nil {
 					permissionRequestMu.Lock()
 					permissionRequestMap[reqID] = permissionRequest{
 						DroidRequestID: msg.ID,
 						ToolCallID:     toolUses.ToolUse.ID,
+						WritePath:      writePath,
+						WriteContent:   writeContent,
 					}
 					permissionRequestMu.Unlock()
 				} else {
@@ -798,7 +834,7 @@ func main() {
 				continue
 			}
 
-			fmt.Fprintf(os.Stderr, "[DROID->] %s\n", line)
+			//fmt.Fprintf(os.Stderr, "[DROID->] %s\n", line)
 
 			var msg types.DroidMessage
 			if err := json.Unmarshal([]byte(line), &msg); err != nil {
