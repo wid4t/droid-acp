@@ -712,6 +712,11 @@ func handleDroidMessage(msg types.DroidMessage) {
 						filePath = patch.URI
 						oldText = patch.Before
 						newText = patch.After
+
+						writePath = filePath
+						if toolUses.Details != nil {
+							writeContent = toolUses.Details.NewContent
+						}
 					case "edit":
 						var input types.InputEdit
 						if err := json.Unmarshal(inputRaw, &input); err != nil {
