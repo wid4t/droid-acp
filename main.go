@@ -705,6 +705,8 @@ func handleDroidMessage(msg types.DroidMessage) {
 					title = toolUses.Details.FullCommand
 				} else if toolUses.ConfirmationType == "create" {
 					title = "create " + toolUses.Details.FilePath + "?"
+				} else if toolUses.ConfirmationType == "exit_spec_mode" {
+					title = toolUses.Details.Title
 				} else {
 					title = "update"
 				}
@@ -717,6 +719,13 @@ func handleDroidMessage(msg types.DroidMessage) {
 
 					inputRaw := toolUses.ToolUse.Input
 					switch toolUses.ConfirmationType {
+					case "create":
+						filePath = toolUses.Details.FilePath
+						newText = toolUses.Details.Content
+						writePath = filePath
+						if toolUses.Details != nil {
+							writeContent = newText
+						}
 					case "apply_patch":
 						var input types.InputApplyPatch
 						if err := json.Unmarshal(inputRaw, &input); err != nil {
@@ -789,6 +798,7 @@ func handleDroidMessage(msg types.DroidMessage) {
 						SessionId: currentSession,
 						ToolCall: types.ToolCall{
 							ToolCallId: toolUses.ToolUse.ID,
+							Title:      title,
 						},
 						Options: options,
 					}
