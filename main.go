@@ -11,6 +11,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"time"
 
 	"droid-acp/types"
 	"droid-acp/utils"
@@ -18,7 +19,11 @@ import (
 	"github.com/google/uuid"
 )
 
-const version = "1.0.3"
+const (
+	version                = "1.0.3"
+	modelUpdateMaxAttempts = 3
+	modelUpdateRetryDelay  = 200 * time.Millisecond
+)
 
 var (
 	writeMu              sync.Mutex
@@ -395,8 +400,18 @@ func handleACPRequest(req types.ACPRequest) {
 			"modelId":   modelId,
 		}
 
-		if _, err := sendDroidRequest("droid.update_session_settings", updateParams); err != nil {
-			fmt.Fprintf(os.Stderr, "Failed to send model update to droid:  %v\n", err)
+		var sendErr error
+		for attempt := 1; attempt <= modelUpdateMaxAttempts; attempt++ {
+			if _, sendErr = sendDroidRequest("droid.update_session_settings", updateParams); sendErr == nil {
+				break
+			}
+			fmt.Fprintf(os.Stderr, "Failed to send model update to droid (attempt %d/%d): %v\n", attempt, modelUpdateMaxAttempts, sendErr)
+			if attempt < modelUpdateMaxAttempts {
+				time.Sleep(modelUpdateRetryDelay)
+			}
+		}
+		if sendErr != nil {
+			fmt.Fprintf(os.Stderr, "[ERROR] Failed to send model update to droid after %d attempts: %v\n", modelUpdateMaxAttempts, sendErr)
 		}
 
 	default:
