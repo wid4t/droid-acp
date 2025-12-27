@@ -20,7 +20,7 @@ import (
 )
 
 const (
-	version                = "1.0.3"
+	version                = "1.0.4"
 	modelUpdateMaxAttempts = 3
 	modelUpdateRetryDelay  = 200 * time.Millisecond
 )
@@ -414,6 +414,31 @@ func handleACPRequest(req types.ACPRequest) {
 			fmt.Fprintf(os.Stderr, "[ERROR] Failed to send model update to droid after %d attempts: %v\n", modelUpdateMaxAttempts, sendErr)
 		}
 
+	case "session/set_mode":
+		var params types.SetModeParams
+		if err := json.Unmarshal(req.Params, &params); err != nil {
+			fmt.Fprintf(os.Stderr, "Failed to parse session/set_model params: %v\n", err)
+			sendACPResponse(req.ID, map[string]any{})
+			return
+		}
+
+		sessionID := strings.TrimSpace(params.SessionId)
+		if sessionID == "" {
+			sessionID = currentSession
+		}
+
+		autonomyLevel := strings.TrimSpace(string(params.ModeId))
+		if autonomyLevel == "" {
+			fmt.Fprintf(os.Stderr, "[WARN] Missing modelId in session/set_model params\n")
+		}
+
+		updateParams := map[string]any{
+			"sessionId":     sessionID,
+			"autonomyLevel": autonomyLevel,
+		}
+
+		sendDroidRequest("droid.update_session_settings", updateParams)
+
 	default:
 		fmt.Fprintf(os.Stderr, "Unknown ACP method: %s\n", req.Method)
 		sendACPResponse(req.ID, map[string]any{})
@@ -436,89 +461,55 @@ func handleDroidMessage(msg types.DroidMessage) {
 				return
 			}
 
-			modelIDs := make(map[types.ModelId]struct{})
 			var models []types.ModelInfo
-			currentModelID := types.ModelId(strings.TrimSpace(result.Settings.ModelID))
+
+			currentModelId := types.ModelId(result.Settings.ModelID)
+			currentAnatomyLevel := result.Settings.AutonomyLevel
 
 			for _, model := range result.AvailableModels {
-
-				id := strings.TrimSpace(model.ModelID)
-				if id == "" {
-					id = strings.TrimSpace(model.ID)
-				}
-				if id == "" {
-					continue
-				}
-
-				name := strings.TrimSpace(model.DisplayName)
-				if name == "" {
-					name = strings.TrimSpace(model.ShortDisplayName)
-				}
-				if name == "" {
-					name = id
-				}
-
-				desc := strings.TrimSpace(model.DisplayName)
-				if desc == "" {
-					desc = name
-				}
-
-				info := types.ModelInfo{
-					ModelId: types.ModelId(id),
-					Name:    name,
-				}
-				if desc != "" && desc != name {
-					info.Description = desc
-				}
-
-				models = append(models, info)
-				modelIDs[info.ModelId] = struct{}{}
-
-			}
-
-			if len(models) == 0 {
-				fallbackID := currentModelID
-				if fallbackID == "" {
-					fallbackID = types.ModelId("droid-default")
-				}
-				name := string(fallbackID)
-				if name == "" {
-					name = "Default"
-				}
 				models = append(models, types.ModelInfo{
-					ModelId: fallbackID,
-					Name:    name,
+					ModelId:     types.ModelId(model.ID),
+					Name:        model.DisplayName,
+					Description: model.DisplayName,
 				})
-				modelIDs[fallbackID] = struct{}{}
-				if currentModelID == "" {
-					currentModelID = fallbackID
-				}
 			}
 
-			if currentModelID == "" && len(models) > 0 {
-				currentModelID = models[0].ModelId
-			}
-
-			if _, ok := modelIDs[currentModelID]; !ok && currentModelID != "" {
-				name := string(currentModelID)
-				if name == "" {
-					name = models[0].Name
-				}
-				models = append([]types.ModelInfo{{
-					ModelId: currentModelID,
-					Name:    name,
-				}}, models...)
-			}
-
-			var modelsRoot = types.Models{
+			var listModel = types.Models{
 				AvailableModels: models,
-				CurrentModelId:  currentModelID,
+				CurrentModelId:  currentModelId,
+			}
+
+			var availableModes []types.AvailableMode = []types.AvailableMode{}
+			availableModes = append(availableModes, types.AvailableMode{
+				Id:          "normal",
+				Name:        "Normal",
+				Description: "Safe for reviewing what changes would be made",
+			})
+			availableModes = append(availableModes, types.AvailableMode{
+				Id:          "auto-low",
+				Name:        "Auto Low",
+				Description: "Documentation updates, code formatting, adding comments",
+			})
+			availableModes = append(availableModes, types.AvailableMode{
+				Id:          "auto-medium",
+				Name:        "Auto Medium",
+				Description: "Local development, testing, dependency management",
+			})
+			availableModes = append(availableModes, types.AvailableMode{
+				Id:          "auto-high",
+				Name:        "Auto High",
+				Description: "CI/CD pipelines, automated deployments",
+			})
+			listMode := types.Modes{
+				CurrentModeId:  currentAnatomyLevel,
+				AvailableModes: availableModes,
 			}
 
 			currentSession = uuid.New().String()
-			response := types.NewSessionResult{
+			payloadListModel := types.NewSessionResult{
 				SessionId: currentSession,
-				Models:    modelsRoot,
+				Models:    listModel,
+				Modes:     listMode,
 			}
 			pendingSessionMu.Lock()
 			acpID := pendingSessionID
@@ -528,7 +519,8 @@ func handleDroidMessage(msg types.DroidMessage) {
 				fmt.Fprintf(os.Stderr, "[WARN] Missing pending session/new ID; cannot respond\n")
 				return
 			}
-			sendACPResponse(acpID, response)
+			sendACPResponse(acpID, payloadListModel)
+
 		}
 	} else {
 		switch msg.Method {
@@ -544,11 +536,6 @@ func handleDroidMessage(msg types.DroidMessage) {
 				fmt.Fprintf(os.Stderr, "Failed to parse droid.session_notification: %v\n", err)
 				return
 			}
-
-			paramsJSON, _ := json.Marshal(msg.Params)
-			fmt.Fprintf(os.Stderr, "[DROID PARAMS] %s\n", string(paramsJSON))
-
-			fmt.Fprintf(os.Stderr, "[DROID NOTIF] type=%s textDelta=%q\n", params.Notification.Type, params.Notification.TextDelta)
 
 			switch params.Notification.Type {
 			case "assistant_text_delta":
@@ -599,10 +586,6 @@ func handleDroidMessage(msg types.DroidMessage) {
 
 				if len(patch.URI) > 0 {
 
-					fmt.Fprintf(os.Stderr, "URI: %s\n", patch.URI)
-					fmt.Fprintf(os.Stderr, "BEFORE: %s\n", patch.Before)
-					fmt.Fprintf(os.Stderr, "AFTER: %s\n", patch.After)
-
 					content := types.Content{
 						Type:    "diff",
 						Path:    patch.URI,
@@ -633,19 +616,24 @@ func handleDroidMessage(msg types.DroidMessage) {
 				}
 
 			case "droid_working_state_changed":
-				if params.Notification.NewState == "idle" {
-					result := types.PromptResult{
-						StopReason: "end_turn",
+				switch params.Notification.NewState {
+				case "idle":
+					if pendingPromptID != nil {
+						result := types.PromptResult{
+							StopReason: "end_turn",
+						}
+						pendingPromptMu.Lock()
+						promptID := pendingPromptID
+						pendingPromptID = nil
+						pendingPromptMu.Unlock()
+						if promptID == nil {
+							fmt.Fprintf(os.Stderr, "[WARN] Missing pending prompt ID; cannot respond\n")
+							break
+						}
+						sendACPResponse(promptID, result)
 					}
-					pendingPromptMu.Lock()
-					promptID := pendingPromptID
-					pendingPromptID = nil
-					pendingPromptMu.Unlock()
-					if promptID == nil {
-						fmt.Fprintf(os.Stderr, "[WARN] Missing pending prompt ID; cannot respond\n")
-						break
-					}
-					sendACPResponse(promptID, result)
+				case "compacting_conversation":
+					sendDroidOK(msg.ID)
 				}
 
 			case "mcp_status_changed":
@@ -656,9 +644,6 @@ func handleDroidMessage(msg types.DroidMessage) {
 				cwd := strings.TrimSpace(lastSessionCwd)
 				if cwd == "" {
 					cwd = "."
-				}
-				if err := initializeDroidSession(cwd); err != nil {
-					fmt.Fprintf(os.Stderr, "Failed to reinitialize droid session after settings update: %v\n", err)
 				}
 
 			default:

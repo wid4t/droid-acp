@@ -92,6 +92,7 @@ type NewSessionParams struct {
 type NewSessionResult struct {
 	SessionId string `json:"sessionId"`
 	Models    Models `json:"models,omitempty"`
+	Modes     Modes  `json:"modes"`
 }
 
 type Models struct {
@@ -125,6 +126,11 @@ type SetModelParams struct {
 	ModelID   ModelId `json:"modelId"`
 }
 
+type SetModeParams struct {
+	SessionId string `json:"sessionId"`
+	ModeId    string `json:"modeId"`
+}
+
 type SessionRequestPermissionParams struct {
 	SessionId string   `json:"sessionId"`
 	ToolCall  ToolCall `json:"toolCall"`
@@ -156,34 +162,6 @@ type PatchResult struct {
 	After  string
 }
 
-type ResultModel struct {
-	SessionID       string           `json:"sessionId"`
-	Session         ResultSession    `json:"session"`
-	Settings        SessionSettings  `json:"settings"`
-	AvailableModels []AvailableModel `json:"availableModels"`
-}
-
-type ResultSession struct {
-	Messages []Message `json:"messages"`
-}
-
-type SessionSettings struct {
-	ModelID         string `json:"modelId"`
-	ReasoningEffort string `json:"reasoningEffort"`
-	AutonomyLevel   string `json:"autonomyLevel"`
-}
-
-type AvailableModel struct {
-	ID                        string   `json:"id"`
-	ModelID                   string   `json:"modelId"`
-	ModelProvider             string   `json:"modelProvider"`
-	DisplayName               string   `json:"displayName"`
-	ShortDisplayName          string   `json:"shortDisplayName"`
-	SupportedReasoningEfforts []string `json:"supportedReasoningEfforts"`
-	DefaultReasoningEffort    string   `json:"defaultReasoningEffort"`
-	IsCustom                  bool     `json:"isCustom"`
-}
-
 type ModelInfo struct {
 	ModelId     ModelId `json:"modelId"`
 	Name        string  `json:"name"`
@@ -191,6 +169,7 @@ type ModelInfo struct {
 }
 
 type ModelId string
+type AnatomyLevel string
 
 // struct for permission request
 type RequestPermissionParam struct {
@@ -255,6 +234,45 @@ type Content struct {
 //--- end of struct for session update param
 
 // struct for Droid
+type ResultModel struct {
+	SessionID       string           `json:"sessionId"`
+	Settings        SessionSettings  `json:"settings"`
+	AvailableModels []AvailableModel `json:"availableModels"`
+}
+
+type SessionSettings struct {
+	ModelID         string `json:"modelId"`
+	ReasoningEffort string `json:"reasoningEffort"`
+	AutonomyLevel   string `json:"autonomyLevel"`
+}
+
+type AvailableModel struct {
+	ID                        string   `json:"id"`
+	ModelID                   string   `json:"modelId"`
+	ModelProvider             string   `json:"modelProvider"`
+	DisplayName               string   `json:"displayName"`
+	ShortDisplayName          string   `json:"shortDisplayName"`
+	SupportedReasoningEfforts []string `json:"supportedReasoningEfforts"`
+	DefaultReasoningEffort    string   `json:"defaultReasoningEffort"`
+	IsCustom                  bool     `json:"isCustom"`
+}
+
+type SessionModesParam struct {
+	SessionId string `json:"sessionId"`
+	Modes     Modes  `json:"modes"`
+}
+
+type Modes struct {
+	CurrentModeId  string          `json:"currentModeId"`
+	AvailableModes []AvailableMode `json:"availableModes"`
+}
+
+type AvailableMode struct {
+	Id          string `json:"id"`
+	Name        string `json:"name"`
+	Description string `json:"description"`
+}
+
 type DroidNotification struct {
 	Notification DroidNotificationData `json:"notification,omitempty"`
 	ToolUses     []ToolUseParent       `json:"toolUses,omitempty"`
@@ -328,3 +346,5 @@ type FSWriteTextFileParam struct {
 	Path      string `json:"path"`
 	Content   string `json:"content"`
 }
+
+// -- end of struct for fs
