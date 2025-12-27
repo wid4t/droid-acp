@@ -295,6 +295,8 @@ type ToolUseDetail struct {
 	Command           string   `json:"command,omitempty"`
 	ExtractedCommands []string `json:"extractedCommands,omitempty"`
 	ImpactLevel       string   `json:"impactLevel,omitempty"`
+	Title             string   `json:"title,omitempty"`
+	Content           string   `json:"content,omitempty"`
 }
 
 type DroidNotificationData struct {

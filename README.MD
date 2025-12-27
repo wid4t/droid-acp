@@ -5,7 +5,16 @@ Droid ACP ( Droid Unofficial ACP connector for Zed Editor | size : under 5 MB )
   <img src="image/example.png" width="1000">
 </p>
 
-support : gpt-5.1.codex, GLM-4.7 ( other model to be confirm )
+support : 
+- claude opus 4.5
+- claude sonnet 4.5
+- claude haiku 4.5
+- gpt 5.1 codex
+- glm 4.7 
+- gemini 3 flash
+- gemini 3 pro
+
+- other model to be confirm
 
 Build
 -----
@@ -38,6 +47,7 @@ Change Log
 ------
 ### v1.0.3
 - feat: implement edit tracking feature ( code review )
+- fix: error get response create from droid when use gemini 3 pro 
 
 ### v1.0.2
 - refactor code and improvement
