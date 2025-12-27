@@ -45,6 +45,10 @@ Once the binary is on PATH, Zed can invoke `droid-acp` directly through the CLI.
 
 Change Log
 ------
+### v1.0.4
+- feat: implement droid autonomy level in ai mode menu
+- note: click on prompt message, and then push ctrl + I on your keyboard
+
 ### v1.0.3
 - feat: implement edit tracking feature ( code review )
 - fix: error get response create from droid when use gemini 3 pro 
