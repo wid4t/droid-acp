@@ -1,8 +1,8 @@
-Droid ACP ( Droid Unofficial ACP connector for Zed Editor )
+Droid ACP ( Droid Unofficial ACP connector for Zed Editor | size : under 5 MB )
 =========
 
 <p align="center">
-  <img src="image/example.png" width="500">
+  <img src="image/example.png" width="1000">
 </p>
 
 support : gpt-5.1.codex, GLM-4.7 ( other model to be confirm )
