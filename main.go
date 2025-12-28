@@ -20,7 +20,7 @@ import (
 )
 
 const (
-	version                = "1.0.4"
+	version                = "1.0.5"
 	modelUpdateMaxAttempts = 3
 	modelUpdateRetryDelay  = 200 * time.Millisecond
 )
@@ -30,6 +30,7 @@ var (
 	droidMsgID           int
 	acpMsgID             int
 	modelId              string
+	modelFilter          string = "all"
 	currentSession       string
 	lastSessionCwd       string
 	droidIn              io.Writer
@@ -467,6 +468,12 @@ func handleDroidMessage(msg types.DroidMessage) {
 			currentAnatomyLevel := result.Settings.AutonomyLevel
 
 			for _, model := range result.AvailableModels {
+				if modelFilter == "custom" && !model.IsCustom {
+					continue
+				}
+				if modelFilter == "common" && model.IsCustom {
+					continue
+				}
 				models = append(models, types.ModelInfo{
 					ModelId:     types.ModelId(model.ID),
 					Name:        model.DisplayName,
@@ -646,6 +653,10 @@ func handleDroidMessage(msg types.DroidMessage) {
 					cwd = "."
 				}
 
+				if err := initializeDroidSession(cwd); err != nil {
+					fmt.Fprintf(os.Stderr, "Failed to initialize droid session after settings update: %v\n", err)
+				}
+
 			default:
 				fmt.Fprintf(os.Stderr, "Unknown droid Notification.Type: %s\n", params.Notification.Type)
 				sendDroidOK(msg.ID)
@@ -815,6 +826,16 @@ func main() {
 			fmt.Println("v." + version)
 			return
 		}
+		if val, ok := strings.CutPrefix(arg, "--model="); ok {
+			modelFilter = val
+		}
+	}
+
+	switch modelFilter {
+	case "all", "common", "custom":
+	default:
+		fmt.Fprintf(os.Stderr, "Invalid model filter %q; must be one of common, custom, or all\n", modelFilter)
+		os.Exit(1)
 	}
 
 	acpOut = os.Stdout

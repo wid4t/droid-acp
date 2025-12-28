@@ -41,10 +41,26 @@ Make sure Zed knows how to call this agent. Add the following snippet to `settin
   }
 ```
 
+if you cant show only custom model (support for 1.0.5 and later)
+
+```json
+  "agent_servers": {
+    "Droid": {
+      "type": "custom",
+      "command": "droid-acp",
+      "args": ["--model=custom"],
+    }
+  }
+```
+the posibility values of --model is custom|common|all
+
 Once the binary is on PATH, Zed can invoke `droid-acp` directly through the CLI.
 
 Change Log
 ------
+### v1.0.5
+- feat: add feature for show custom model only
+
 ### v1.0.4
 - feat: implement droid autonomy level in ai mode menu
 - note: click on prompt message, and then push ctrl + I on your keyboard
